@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <ctime>
 #include "TrafficLight.h"
 
 /* Implementation of class "MessageQueue" */
@@ -63,7 +64,7 @@ void TrafficLight::waitForGreen()
 
 TrafficLightPhase TrafficLight::getCurrentPhase()
 {
-    std::lock_guard<std::mutex> lckCurrentPhase(_mutex);
+    //std::lock_guard<std::mutex> lckCurrentPhase(_mutex);
     return _currentPhase;
 }
 
@@ -80,7 +81,8 @@ void TrafficLight::cycleThroughPhases()
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
-
+    
+    srand(time(NULL));
     double cycleDuration = rand()%(6-4+1)+4; // Generate the number, assign to variable.; 
     std::chrono::time_point<std::chrono::system_clock> lastUpdate;
     lastUpdate = std::chrono::system_clock::now();
@@ -92,18 +94,18 @@ void TrafficLight::cycleThroughPhases()
         uint timeSinceLastUpdate = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - lastUpdate).count();
         if (timeSinceLastUpdate >= cycleDuration)
         {
-            std::unique_lock<std::mutex> lckCurrentPhase(_mutex);
+            //std::unique_lock<std::mutex> lckCurrentPhase(_mutex);
             if (_currentPhase == TrafficLightPhase::red)
             {
                 _currentPhase = TrafficLightPhase::green;
-                _msgQueue.send(TrafficLightPhase::green);
             }
             else
             {
                 _currentPhase = TrafficLightPhase::red;
-                _msgQueue.send(TrafficLightPhase::red);
             }
-            lckCurrentPhase.unlock();
+
+            _msgQueue.send(std::move(_currentPhase));
+            //lckCurrentPhase.unlock();
 
             // reset clock
             lastUpdate = std::chrono::system_clock::now();
